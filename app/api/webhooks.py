@@ -61,22 +61,37 @@ async def receive_message(request: Request, background_tasks: BackgroundTasks):
         else:
             # ========== FORMATO META CLOUD API ==========
             payload = await request.json()
-            logger.info(f"Mensaje recibido: {payload}")
+            logger.info(f"Payload recibido de Meta Cloud API: {payload}")
 
-            entry = payload.get("entry", [])[0]
-            changes = entry.get("changes", [])[0]
-            value = changes.get("value", {})
-            messages = value.get("messages", [])
+            entries = payload.get("entry", [])
+            for entry in entries:
+                changes = entry.get("changes", [])
+                for change in changes:
+                    value = change.get("value", {})
+                    messages = value.get("messages", [])
+                    if messages:
+                        for msg in messages:
+                            msg_type = msg.get("type", "text")
+                            from_number = msg.get("from", "")
 
-            if messages:
-                msg = messages[0]
-                from_number = msg.get("from")
-                text = msg.get("text", {}).get("body", "")
+                            if msg_type == "text":
+                                text = msg.get("text", {}).get("body", "")
+                            elif msg_type == "interactive":
+                                interactive = msg.get("interactive", {})
+                                text = (
+                                    interactive.get("button_reply", {}).get("title")
+                                    or interactive.get("list_reply", {}).get("title")
+                                    or ""
+                                )
+                            else:
+                                text = ""
 
-                # Procesar con el agente en segundo plano para evitar timeout
-                background_tasks.add_task(process_message, text, from_number)
+                            if text and from_number:
+                                logger.info(f"Mensaje Meta Cloud API de {from_number}: {text}")
+                                background_tasks.add_task(process_message, text, from_number)
 
     except Exception as e:
         logger.error(f"Error procesando mensaje: {str(e)}", exc_info=True)
 
     return {"status": "ok"}
+
