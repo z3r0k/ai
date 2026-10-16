@@ -2,9 +2,12 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    backend_url: str = "https://backend-inmoboot.onrender.com/api"
+    # Equivale a {{URL_BASE}} de la colección Postman (dominio, sin /api).
+    backend_url: str = "https://inmoboot-gestiona-tu-propiedad.onrender.com"
     backend_user: str = "app@inmobot.com"
-    backend_password: str = "SW5tb2Jvb3QyMDI2KiM="
+    # Sin default: no dejar credenciales en el código fuente versionado.
+    # Debe venir de la variable de entorno BACKEND_PASSWORD (ver .env).
+    backend_password: str
     google_api_key: str
 
     # --- Meta WhatsApp Cloud API ---
